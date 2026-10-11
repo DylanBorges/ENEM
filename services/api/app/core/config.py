@@ -3,7 +3,19 @@ from typing import List
 from pathlib import Path
 
 
-PROJECT_ENV = Path(__file__).resolve().parents[4] / ".env"
+def _find_env_file() -> Path | None:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        cand = parent / ".env"
+        if cand.is_file():
+            return cand
+    cwd_env = Path.cwd() / ".env"
+    if cwd_env.is_file():
+        return cwd_env
+    return None
+
+
+PROJECT_ENV = _find_env_file()
 
 
 class Settings(BaseSettings):

@@ -22,7 +22,16 @@ PAST_PAPERS = {
     (2, "AMARELA"): 5,
 }
 
-BOOKLETS_DIR = Path(__file__).resolve().parents[4] / "data/booklets"
+def _find_booklets_dir() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        cand = parent / "data/booklets"
+        if cand.is_dir():
+            return cand
+    return Path("data/booklets")
+
+
+BOOKLETS_DIR = _find_booklets_dir()
 
 
 @router.get("", response_model=list[ExamOut])
