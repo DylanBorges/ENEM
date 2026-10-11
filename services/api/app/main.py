@@ -17,10 +17,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("enem_api")
 
 
+from pathlib import Path
+
+
+def _seed_reference_data_if_empty():
+    try:
+        from app.models.exam import Exam
+        from app.db.session import SessionLocal
+        with SessionLocal() as db:
+            if db.query(Exam).count() == 0:
+                seed_file = Path(__file__).parent / "db" / "reference_seed.sql"
+                if seed_file.exists():
+                    logger.info(json.dumps({"event": "seeding_reference_data"}))
+                    seed_sql = seed_file.read_text(encoding="utf-8")
+                    raw_conn = db.connection().connection
+                    raw_conn.executescript(seed_sql)
+                    db.commit()
+                    logger.info(json.dumps({"event": "seeded_reference_data_complete", "exams": db.query(Exam).count()}))
+    except Exception as exc:
+        logger.error(json.dumps({"event": "seeding_error", "error": str(exc)}))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Inicialização: cria tabelas se não existirem
     Base.metadata.create_all(bind=engine)
+    _seed_reference_data_if_empty()
     logger.info(json.dumps({"event": "startup", "service": "enem-api", "status": "ready"}))
     yield
     logger.info(json.dumps({"event": "shutdown", "service": "enem-api"}))
@@ -36,10 +58,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware
+# CORS Middleware (suporta domínios locais e qualquer preview/produção do Vercel)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
