@@ -1,0 +1,30 @@
+name: Docker Builds
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/api/Dockerfile
+          push: false
+
+      - name: Build Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/worker/Dockerfile
+          push: false

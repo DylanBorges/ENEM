@@ -1,0 +1,46 @@
+edition: 2024
+encoding: "latin-1"
+delimiter: ";"
+
+columns:
+  result_id: "NU_SEQUENCIAL"
+  ano: "NU_ANO"
+  results_file: "DADOS/RESULTADOS_2024.csv"
+  items_file: "DADOS/ITENS_PROVA_2024.csv"
+
+areas:
+  CN:
+    presenca: "TP_PRESENCA_CN"
+    caderno: "CO_PROVA_CN"
+    respostas: "TX_RESPOSTAS_CN"
+    gabarito: "TX_GABARITO_CN"
+    nota_oficial: "NU_NOTA_CN"
+  CH:
+    presenca: "TP_PRESENCA_CH"
+    caderno: "CO_PROVA_CH"
+    respostas: "TX_RESPOSTAS_CH"
+    gabarito: "TX_GABARITO_CH"
+    nota_oficial: "NU_NOTA_CH"
+  LC:
+    presenca: "TP_PRESENCA_LC"
+    caderno: "CO_PROVA_LC"
+    respostas: "TX_RESPOSTAS_LC"
+    gabarito: "TX_GABARITO_LC"
+    nota_oficial: "NU_NOTA_LC"
+    lingua: "TP_LINGUA"
+  MT:
+    presenca: "TP_PRESENCA_MT"
+    caderno: "CO_PROVA_MT"
+    respostas: "TX_RESPOSTAS_MT"
+    gabarito: "TX_GABARITO_MT"
+    nota_oficial: "NU_NOTA_MT"
+
+redacao:
+  presenca: "TP_STATUS_REDACAO"
+  nota_c1: "NU_NOTA_COMP1"
+  nota_c2: "NU_NOTA_COMP2"
+  nota_c3: "NU_NOTA_COMP3"
+  nota_c4: "NU_NOTA_COMP4"
+  nota_c5: "NU_NOTA_COMP5"
+  nota_total: "NU_NOTA_REDACAO"
+

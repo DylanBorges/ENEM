@@ -1,0 +1,15 @@
+year: 2024
+dataset_name: "microdados_enem_2024"
+source_url: "https://download.inep.gov.br/microdados/microdados_enem_2024.zip"
+sha256: "69ee52dbcdae61410a7b2c31b776f396f2da30febfc1d2856e9e0ad064c76fb1"
+download_date: "2026-10-11"
+source_last_modified: "2026-07-09T22:01:17Z"
+archive_size_bytes: 526073856
+archive_entries: 20
+archive_validation: "7-Zip test: Everything is Ok"
+official_regular_keys:
+  D1_CD1: "673d3d060156d6ad610ecf96c3dd0b8c61f361e16c57860c4ca5b5fecc8be050"
+  D2_CD7: "8d27b5a447061e9a1c181d00a916d10f45e1c6c1da68d628b3ae8bdfedbf5c92"
+license_notes: >
+  Dados publicados pelo Inep/MEC. Consultar os termos e a documentação da
+  fonte antes de redistribuição. Não versionar os arquivos brutos no repositório.

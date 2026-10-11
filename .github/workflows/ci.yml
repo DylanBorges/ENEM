@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/tri_core
+          pip install -r services/api/pyproject.toml || true
+          pip install pytest httpx numpy scipy pydantic pydantic-settings sqlalchemy alembic python-jose[cryptography] passlib[bcrypt] bcrypt python-multipart redis celery pillow reportlab opencv-python-headless email-validator pyyaml
+
+      - name: Run tri_core tests
+        run: pytest packages/tri_core/tests -v
+
+      - name: Run API tests
+        run: |
+          export PYTHONPATH="services/api"
+          pytest services/api/tests -v
+
+      - name: Run Worker tests
+        run: pytest services/worker/tests -v
+
+      - name: Run INEP Pipeline tests
+        run: pytest pipelines/inep/tests -v

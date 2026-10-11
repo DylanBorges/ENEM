@@ -1,0 +1,24 @@
+year: 2025
+dataset_name: "microdados_enem_2025"
+source_url: "https://download.inep.gov.br/microdados/microdados_enem_2025.zip"
+sha256: "b8d3e72cbf387ee08f18d552367005429017d43eea1f6d4b9bafe1d83a116071"
+download_date: "2026-10-11"
+source_last_modified: "2026-09-15T16:01:19Z"
+archive_size_bytes: 1035674693
+archive_entries: 21
+archive_validation: "7-Zip test: Everything is Ok"
+official_key_url: "https://download.inep.gov.br/enem/provas_e_gabaritos/2025_GB_impresso_D2_CD5.pdf"
+official_key_sha256: "4feea3658a94e20fa226028824b22538cb1b7e405a6a6e547d6a7131e5c97c22"
+official_regular_keys:
+  D1_CD1: "583ac1950cd1927c42c971c270f96c0e33816844084fd5866a13bf94d8e08a81"
+  D1_CD2: "10a6daeb38ea518d8428dac0d68820ab1f3062dd4216ca6915a78ce830a2abac"
+  D1_CD3: "7beaacb7f790032ab48b3c648420c64a9cc5c8d5b0b7bf695549dc82b4759553"
+  D1_CD4: "98aef68686e8fb4eb32e5cc3e48ce87da5522b159e6fe716f460b250a870eac4"
+  D2_CD5: "4feea3658a94e20fa226028824b22538cb1b7e405a6a6e547d6a7131e5c97c22"
+  D2_CD6: "f53bf552a0fa6ef2b32cfb446d702f6f38fa38285fb25eb0061376073eeb19f6"
+  D2_CD7: "9e2d470af35378df532173414ec7077c3ce4df38c084a5f1258579fdf9270aef"
+  D2_CD8: "66c2950d747aec5e55d9489af01d412d9fd6ff978e3402511242d9201a561959"
+schema_version: "2025.v1"
+license_notes: >
+  Dados publicados pelo Inep/MEC. Consultar os termos e a documentação da
+  fonte antes de redistribuição. Não versionar os arquivos brutos no repositório.

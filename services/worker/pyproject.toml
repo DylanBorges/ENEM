@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enem-worker"
+version = "0.1.0"
+description = "Celery background worker for OMR, reports, and calibration"
+authors = [{ name = "ENEM Intelligence Team" }]
+requires-python = ">=3.10"
+dependencies = [
+    "celery>=5.3.0",
+    "redis>=5.0.0",
+    "opencv-python-headless>=4.9.0",
+    "pillow>=10.2.0",
+    "reportlab>=4.1.0",
+    "tri-core",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
