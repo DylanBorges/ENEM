@@ -89,6 +89,8 @@ async def log_requests_middleware(request: Request, call_next):
 
 
 # Health endpoints
+@app.get("/", tags=["health"])
+@app.head("/", tags=["health"])
 @app.get("/health", tags=["health"])
 @app.get("/health/live", tags=["health"])
 def health_live():
