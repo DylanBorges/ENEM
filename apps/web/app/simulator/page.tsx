@@ -235,8 +235,8 @@ export default function SimulatorPage() {
         </div>
 
         {selectedBooklet?.paper_url && (
-          <div className="mt-5 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
-            <div>
+          <div className="mt-5 flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="font-medium">Caderno oficial do Inep disponível em PDF</p>
               <p className="text-xs text-blue-800">Você pode consultar o caderno completo de questões para estudar e conferir o gabarito.</p>
             </div>
@@ -244,7 +244,7 @@ export default function SimulatorPage() {
               href={selectedBooklet.paper_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg bg-blue-700 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-800 focus:outline-none"
+              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-lg bg-blue-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
             >
               Abrir Caderno PDF ↗
             </a>
