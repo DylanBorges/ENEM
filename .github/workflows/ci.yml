@@ -9,6 +9,8 @@ on:
 jobs:
   test-python:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .:services/api:services/worker
     steps:
       - uses: actions/checkout@v4
 
@@ -23,16 +25,5 @@ jobs:
           pip install -e packages/tri_core
           pip install -e services/api -e services/worker -r pipelines/inep/requirements.txt pytest httpx
 
-      - name: Run tri_core tests
-        run: pytest packages/tri_core/tests -v
-
-      - name: Run API tests
-        run: |
-          export PYTHONPATH="services/api"
-          pytest services/api/tests -v
-
-      - name: Run Worker tests
-        run: pytest services/worker/tests -v
-
-      - name: Run INEP Pipeline tests
-        run: pytest pipelines/inep/tests -v
+      - name: Run required test suite
+        run: python -m pytest packages/tri_core/tests services/api/tests services/worker/tests pipelines/inep/tests -v
