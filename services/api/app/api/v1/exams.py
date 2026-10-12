@@ -22,6 +22,33 @@ PAST_PAPERS = {
     (2, "AMARELA"): 5,
 }
 
+INEP_PAPERS_BASE = "https://download.inep.gov.br/enem/provas_e_gabaritos"
+INEP_ARCHIVE_BASE = "https://download.inep.gov.br/educacao_basica/enem/provas"
+
+
+def _paper_location(exam: Exam, booklet: Booklet) -> tuple[str, str] | None:
+    if exam.application != "regular":
+        return None
+
+    color = booklet.color.upper()
+    if exam.year == 2025:
+        number = REGULAR_2025_PAPERS.get((booklet.day, color))
+    elif exam.year == 2024:
+        number = REGULAR_2024_PAPERS.get((booklet.day, color))
+    else:
+        number = PAST_PAPERS.get((booklet.day, color))
+    if number is None:
+        return None
+
+    filename = f"{exam.year}_PV_impresso_D{booklet.day}_CD{number}.pdf"
+    if exam.year == 2018 and booklet.day == 2 and number == 5:
+        official_url = f"{INEP_ARCHIVE_BASE}/2018/2DIA_05_AMARELO_BAIXA.pdf"
+    elif exam.year <= 2019:
+        official_url = f"{INEP_ARCHIVE_BASE}/{exam.year}/{filename}"
+    else:
+        official_url = f"{INEP_PAPERS_BASE}/{filename}"
+    return filename, official_url
+
 def _find_booklets_dir() -> Path:
     current = Path(__file__).resolve()
     for parent in current.parents:
@@ -79,22 +106,9 @@ def get_exam_booklets(exam_id: str, db: Session = Depends(get_db)):
     booklets = db.scalars(select(Booklet).where(Booklet.exam_id == exam_id).order_by(Booklet.day, Booklet.color)).all()
     results = []
     for booklet in booklets:
-        paper_url = None
-        color_clean = booklet.color.upper()
-        if exam.application == "regular":
-            if exam.year == 2025:
-                number = REGULAR_2025_PAPERS.get((booklet.day, color_clean))
-            elif exam.year == 2024:
-                number = REGULAR_2024_PAPERS.get((booklet.day, color_clean))
-            else:
-                number = PAST_PAPERS.get((booklet.day, color_clean))
-
-            if number is not None:
-                paper_url = (
-                    "https://download.inep.gov.br/enem/provas_e_gabaritos/"
-                    f"{exam.year}_PV_impresso_D{booklet.day}_CD{number}.pdf"
-                )
-        pdf_download_url = f"/v1/exams/booklets/{booklet.id}/pdf"
+        location = _paper_location(exam, booklet)
+        paper_url = location[1] if location else None
+        pdf_download_url = f"/v1/exams/booklets/{booklet.id}/pdf" if location else None
         results.append(
             BookletOut.model_validate(booklet).model_copy(
                 update={"paper_url": paper_url, "pdf_download_url": pdf_download_url}
@@ -144,17 +158,9 @@ def get_booklet_pdf(booklet_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Caderno não encontrado")
 
     exam = booklet.exam
-    color_clean = booklet.color.upper()
-    number = None
-    if exam.year == 2025:
-        number = REGULAR_2025_PAPERS.get((booklet.day, color_clean))
-    elif exam.year == 2024:
-        number = REGULAR_2024_PAPERS.get((booklet.day, color_clean))
-    else:
-        number = PAST_PAPERS.get((booklet.day, color_clean))
-
-    filename = f"{exam.year}_PV_impresso_D{booklet.day}_CD{number}.pdf" if number else None
-    if filename:
+    location = _paper_location(exam, booklet)
+    if location:
+        filename, official_url = location
         local_path = BOOKLETS_DIR / filename
         if local_path.is_file():
             return FileResponse(
@@ -162,6 +168,6 @@ def get_booklet_pdf(booklet_id: str, db: Session = Depends(get_db)):
                 media_type="application/pdf",
                 filename=filename,
             )
-        return RedirectResponse(url=f"https://download.inep.gov.br/enem/provas_e_gabaritos/{filename}")
+        return RedirectResponse(url=official_url)
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF do caderno não encontrado")

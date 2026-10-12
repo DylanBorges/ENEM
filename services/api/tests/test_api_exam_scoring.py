@@ -138,6 +138,35 @@ def test_2024_blue_booklet_links_to_matching_official_paper(client, seed_data, d
     assert response.json()[0]["paper_url"].endswith("2024_PV_impresso_D2_CD7.pdf")
 
 
+@pytest.mark.parametrize(
+    ("year", "day", "color", "expected_url"),
+    [
+        (2017, 1, "Azul", "https://download.inep.gov.br/educacao_basica/enem/provas/2017/2017_PV_impresso_D1_CD1.pdf"),
+        (2018, 2, "Amarela", "https://download.inep.gov.br/educacao_basica/enem/provas/2018/2DIA_05_AMARELO_BAIXA.pdf"),
+        (2025, 2, "Azul", "https://download.inep.gov.br/enem/provas_e_gabaritos/2025_PV_impresso_D2_CD7.pdf"),
+    ],
+)
+def test_paper_links_work_without_local_pdf(
+    client, seed_data, db_session, monkeypatch, tmp_path,
+    year, day, color, expected_url,
+):
+    monkeypatch.setattr("app.api.v1.exams.BOOKLETS_DIR", tmp_path)
+    exam = seed_data["exam"]
+    booklet = seed_data["booklet"]
+    exam.year = year
+    booklet.day = day
+    booklet.color = color
+    db_session.commit()
+
+    listed = client.get(f"/v1/exams/{exam.id}/booklets")
+    assert listed.status_code == 200
+    assert listed.json()[0]["paper_url"] == expected_url
+
+    pdf = client.get(f"/v1/exams/booklets/{booklet.id}/pdf", follow_redirects=False)
+    assert pdf.status_code == 307
+    assert pdf.headers["location"] == expected_url
+
+
 def test_upload_answer_sheet_validation(client, seed_data):
     login_res = client.post(
         "/v1/auth/login",
