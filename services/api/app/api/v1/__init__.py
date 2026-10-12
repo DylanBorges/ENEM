@@ -10,6 +10,7 @@ from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.institutions import router as institutions_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.jobs import router as jobs_router
+from app.api.v1.questions import router as questions_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
@@ -22,3 +23,4 @@ api_router.include_router(dashboard_router)
 api_router.include_router(institutions_router)
 api_router.include_router(admin_router)
 api_router.include_router(jobs_router)
+api_router.include_router(questions_router)

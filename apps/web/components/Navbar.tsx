@@ -17,6 +17,9 @@ export function Navbar() {
           <Link href="/simulator" className="hover:text-blue-400 transition-colors">
             Simulador TRI
           </Link>
+          <Link href="/questions" className="hover:text-blue-400 transition-colors">
+            Questões
+          </Link>
           <Link href="/essay" className="hover:text-blue-400 transition-colors">
             Redação IA
           </Link>

@@ -19,6 +19,12 @@ export default function HomePage() {
 
         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
           <Link
+            href="/questions"
+            className="px-8 py-3.5 bg-white hover:bg-slate-50 text-blue-700 font-semibold rounded-xl transition-all text-sm sm:text-base border border-blue-200"
+          >
+            Explorar questões TRI
+          </Link>
+          <Link
             href="/simulator"
             className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-all text-sm sm:text-base"
           >
