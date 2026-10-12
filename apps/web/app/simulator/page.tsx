@@ -172,7 +172,7 @@ export default function SimulatorPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <h1 className="text-2xl font-bold text-slate-900">Simulador de Nota TRI ENEM</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Calcule sua proficiência estimada (θ) e nota na escala ENEM oficial utilizando o modelo 3PL com estimador EAP.
+          Calcule sua proficiência e nota estimadas com o modelo 3PL e estimador EAP. O resultado não é oficial.
         </p>
 
         {!signedIn && (
@@ -253,7 +253,7 @@ export default function SimulatorPage() {
 
         {exams.length === 0 && !error && (
           <p className="mt-5 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-            Carregando provas disponíveis...
+            Carregando provas disponíveis... Na hospedagem gratuita, o servidor pode levar cerca de 1 minuto para iniciar.
           </p>
         )}
       </section>

@@ -39,6 +39,7 @@ export default function LoginPage() {
       <label className="block text-sm font-medium">E-mail<input type="email" required autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 p-3" /></label>
       <label className="block text-sm font-medium">Senha<input type="password" required autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 p-3" /></label>
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {loading && <p role="status" className="text-sm text-slate-600">Conectando ao servidor. Na hospedagem gratuita, isso pode levar cerca de 1 minuto.</p>}
       <button disabled={loading} className="w-full rounded-lg bg-blue-700 p-3 font-semibold text-white disabled:opacity-50">{loading ? "Aguarde..." : registering ? "Criar conta e entrar" : "Entrar"}</button>
     </form>
     <div className="mt-4 flex flex-col gap-2 pt-2 border-t border-slate-100">

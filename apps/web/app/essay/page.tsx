@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DisclaimerBanner } from "@/components/DisclaimerBanner";
 import { api, token } from "@/lib/api";
+import { essayThemes } from "@/lib/essay-themes";
 
 type Competency = { competency: string; predicted_score: number; confidence: number; feedback: string; evidence_spans: string[]; requires_human_review: boolean };
 type Grade = { submission_id: string; total_score: number; competencies: Competency[]; disclaimer: string; model_version: string; official: false };
@@ -17,7 +18,17 @@ export default function EssayPage() {
   const [busy, setBusy] = useState(false);
   const [review, setReview] = useState("");
   const [signedIn, setSignedIn] = useState(false);
+  const [selectedThemeId, setSelectedThemeId] = useState("");
+  const selectedTheme = essayThemes.find(theme => theme.id === selectedThemeId);
   useEffect(() => setSignedIn(Boolean(token())), []);
+
+  function chooseTheme(id: string) {
+    const theme = essayThemes.find(item => item.id === id);
+    setSelectedThemeId(id);
+    setTopic(theme?.title ?? "");
+    setGrade(null);
+    setError("");
+  }
 
   async function evaluate() {
     setError(""); setGrade(null); setBusy(true);
@@ -42,14 +53,29 @@ export default function EssayPage() {
     <DisclaimerBanner />
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
       <h1 className="text-2xl font-bold">Corrigir minha redação</h1>
-      <p className="mt-2 text-sm text-slate-600">Escreva sobre um tema livre. A avaliação só aparece quando o serviço de IA responder com cinco competências e evidências presentes no texto.</p>
+      <p className="mt-2 text-sm text-slate-600">Escolha uma proposta para praticar ou escreva seu próprio tema. A avaliação só aparece quando o serviço de IA responder com cinco competências e evidências presentes no texto.</p>
       {!signedIn && <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Para salvar e avaliar, <Link href="/login" className="font-semibold underline">entre na sua conta</Link>.</p>}
       <div className="mt-6 space-y-4">
-        <label className="block text-sm font-semibold">Tema<input value={topic} onChange={event => setTopic(event.target.value)} maxLength={255} className="mt-1 block w-full rounded-lg border border-slate-300 p-3 font-normal" /></label>
+        <label className="block text-sm font-semibold">Ideias de temas
+          <select value={selectedThemeId} onChange={event => chooseTheme(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3 font-normal">
+            <option value="">Escolher um tema ou escrever o meu</option>
+            {essayThemes.map(theme => <option key={theme.id} value={theme.id}>{theme.title}</option>)}
+          </select>
+        </label>
+        {selectedTheme && <div className="space-y-3" aria-live="polite">
+          <p className="text-sm text-slate-600">Textos motivadores originais para reflexão. Proposta de treino, não oficial do Inep.</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {selectedTheme.texts.map((text, index) => <article key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <h2 className="font-semibold text-slate-900">Texto {index + 1} · {text.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">{text.body}</p>
+            </article>)}
+          </div>
+        </div>}
+        <label className="block text-sm font-semibold">Tema<input value={topic} onChange={event => { setTopic(event.target.value); if (selectedThemeId) setSelectedThemeId(""); }} maxLength={255} className="mt-1 block w-full rounded-lg border border-slate-300 p-3 font-normal" /></label>
         <label className="block text-sm font-semibold">Sua redação<textarea value={essay} onChange={event => setEssay(event.target.value)} rows={14} maxLength={30000} className="mt-1 block w-full rounded-lg border border-slate-300 p-3 font-normal leading-relaxed" /></label>
         <p className="text-sm text-slate-500">{essay.trim() ? essay.trim().split(/\s+/).length : 0} palavras. O texto digitado não informa a quantidade de linhas da folha oficial.</p>
         {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-        <button onClick={evaluate} disabled={busy || !signedIn || topic.trim().length < 3 || essay.length < 100} className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{busy ? "Avaliando..." : "Avaliar redação"}</button>
+        <button onClick={evaluate} disabled={busy || !signedIn || topic.trim().length < 3 || essay.length < 100} className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{busy ? "Avaliando... O servidor gratuito pode levar cerca de 1 minuto para iniciar." : "Avaliar redação"}</button>
       </div>
     </section>
     {grade && <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8" aria-live="polite">

@@ -17,25 +17,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("enem_api")
 
 
-from pathlib import Path
-
-
 def _seed_reference_data_if_empty():
-    try:
-        from app.models.exam import Exam
-        from app.db.session import SessionLocal
-        with SessionLocal() as db:
-            if db.query(Exam).count() == 0:
-                seed_file = Path(__file__).parent / "db" / "reference_seed.sql"
-                if seed_file.exists():
-                    logger.info(json.dumps({"event": "seeding_reference_data"}))
-                    seed_sql = seed_file.read_text(encoding="utf-8")
-                    raw_conn = db.connection().connection
-                    raw_conn.executescript(seed_sql)
-                    db.commit()
-                    logger.info(json.dumps({"event": "seeded_reference_data_complete", "exams": db.query(Exam).count()}))
-    except Exception as exc:
-        logger.error(json.dumps({"event": "seeding_error", "error": str(exc)}))
+    from app.db.reference_seed import seed_reference_data_if_empty
+
+    count = seed_reference_data_if_empty(engine)
+    if count:
+        logger.info(json.dumps({"event": "seeded_reference_data_complete", "rows": count}))
 
 
 @asynccontextmanager
@@ -103,10 +90,10 @@ def health_ready():
     try:
         with engine.connect() as conn:
             return {"status": "ready", "database": "connected"}
-    except Exception as e:
+    except Exception:
         return JSONResponse(
             status_code=503,
-            content={"status": "not_ready", "error": str(e)},
+            content={"status": "not_ready", "error": "database_unavailable"},
         )
 
 
