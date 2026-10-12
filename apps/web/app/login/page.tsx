@@ -42,14 +42,7 @@ export default function LoginPage() {
       {loading && <p role="status" className="text-sm text-slate-600">Conectando ao servidor. Na hospedagem gratuita, isso pode levar cerca de 1 minuto.</p>}
       <button disabled={loading} className="w-full rounded-lg bg-blue-700 p-3 font-semibold text-white disabled:opacity-50">{loading ? "Aguarde..." : registering ? "Criar conta e entrar" : "Entrar"}</button>
     </form>
-    <div className="mt-4 flex flex-col gap-2 pt-2 border-t border-slate-100">
-      <button
-        type="button"
-        onClick={() => { setEmail("estudante@enem.com"); setPassword("Senha@123"); }}
-        className="text-xs text-slate-500 hover:text-slate-800 underline text-left"
-      >
-        Preencher com usuário de teste (estudante@enem.com)
-      </button>
+    <div className="mt-4 flex flex-col pt-2 border-t border-slate-100">
       <button onClick={() => { setRegistering(!registering); setError(""); }} className="text-sm font-semibold text-blue-700 underline text-left">{registering ? "Já tenho conta" : "Criar uma conta"}</button>
     </div>
   </div>;
