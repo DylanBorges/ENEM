@@ -54,3 +54,30 @@ def test_catalog_does_not_invent_subject_or_publish_unparameterized_item(client,
     assert by_position[1]["subject"] == "Inglês"
     assert by_position[6]["subject"] is None
     assert client.get("/v1/questions?subject=Ingl%C3%AAs").json()["total"] == 1
+
+
+def test_question_detail_and_answer_use_the_matching_official_key(client, seed_data, db_session):
+    item_id = client.get("/v1/questions?page_size=1").json()["items"][0]["id"]
+    detail = client.get(f"/v1/questions/{item_id}")
+    assert detail.status_code == 200
+    assert detail.json()["paper_url"].endswith("2025_PV_impresso_D2_CD7.pdf")
+
+    wrong = client.post(f"/v1/questions/{item_id}/check", json={"answer": "B"})
+    assert wrong.status_code == 200
+    assert wrong.json() == {
+        "item_id": item_id, "selected_answer": "B", "correct_answer": "A",
+        "correct": False, "annulled": False,
+    }
+    right = client.post(f"/v1/questions/{item_id}/check", json={"answer": "A"})
+    assert right.json()["correct"] is True
+    assert client.post(f"/v1/questions/{item_id}/check", json={"answer": "Z"}).status_code == 422
+    assert client.get("/v1/questions/nonexistent").status_code == 404
+    assert client.post("/v1/questions/nonexistent/check", json={"answer": "A"}).status_code == 404
+
+    # An item without published calibration cannot be used as an answer oracle.
+    private = Item(exam_id=seed_data["exam"].id, area="MT", official_item_code="UNPUBLISHED")
+    db_session.add(private)
+    db_session.flush()
+    db_session.add(BookletItem(booklet_id=seed_data["booklet"].id, item_id=private.id, physical_position=11, answer_key="E"))
+    db_session.commit()
+    assert client.post(f"/v1/questions/{private.id}/check", json={"answer": "E"}).status_code == 404

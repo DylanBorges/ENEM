@@ -12,6 +12,8 @@ Para cada edição e área, o endpoint ordena os valores reais de `b` dos itens 
 
 Os microdados identificam a área e a habilidade, não a disciplina específica. O catálogo só atribui automaticamente Matemática aos itens `MT` e Inglês/Espanhol aos cinco itens de língua estrangeira identificados pelo caderno. Os demais ficam sem classificação em vez de receber rótulos como Biologia ou História sem conferência do enunciado. O filtro de disciplina apresenta apenas rótulos efetivamente verificados. O total classificado aparece na interface.
 
-## Caderno oficial
+## Leitura e resposta no site
 
-Cada cartão abre o PDF oficial do Inep. O arquivo `services/api/app/db/question_pages.json` contém apenas os números de página extraídos dos PDFs locais de 2017 a 2025, incluindo as páginas alternativas de Inglês e Espanhol. Para atualizar após adicionar novos cadernos, execute `python -m pipelines.inep.map_question_pages` na raiz do projeto e revise a cobertura antes de publicar. O texto integral das questões e as imagens permanecem nos PDFs do Inep.
+Cada cartão abre `/questions/{id}`. A página renderiza a folha correspondente do PDF oficial do Inep, com ampliação e navegação para questões que continuam na folha seguinte. O estudante seleciona A–E e `POST /v1/questions/{id}/check` confere a marcação com o gabarito do mesmo caderno. O resultado é uma correção individual da questão, não uma nota TRI. O endpoint aceita somente itens do catálogo com calibração publicada.
+
+O arquivo `services/api/app/db/question_pages.json` contém os números de página extraídos dos PDFs locais de 2017 a 2025, incluindo as páginas alternativas de Inglês e Espanhol. Para atualizar após adicionar novos cadernos, execute `python -m pipelines.inep.map_question_pages` na raiz do projeto e revise a cobertura antes de publicar. O texto integral das questões e as imagens permanecem nos PDFs do Inep. A visualização no site depende da disponibilidade dos PDFs oficiais; se um PDF não carregar, a tela oferece um link direto como alternativa. O arquivo `apps/web/public/pdf.worker.min.mjs` deve acompanhar a versão de `pdfjs-dist` fixada no `package-lock.json`.

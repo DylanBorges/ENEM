@@ -5,7 +5,8 @@ from math import ceil
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -43,16 +44,8 @@ def _difficulty_cutoffs(values: list[float]) -> tuple[float, float]:
     return ordered[ceil(len(ordered) / 3) - 1], ordered[ceil(2 * len(ordered) / 3) - 1]
 
 
-@router.get("")
-def list_questions(
-    year: int | None = None,
-    area: str | None = Query(default=None, pattern="^(LC|CH|CN|MT)$"),
-    subject: str | None = None,
-    difficulty: str | None = Query(default=None, pattern="^(facil|media|dificil)$"),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=24, ge=1, le=100),
-    db: Session = Depends(get_db),
-):
+def _build_catalog(db: Session) -> list[dict]:
+    """Only expose items backed by a published, nonempty calibration."""
     rows = db.execute(
         select(Item, Exam, ItemParameterModel, CalibrationRun)
         .join(Exam, Item.exam_id == Exam.id)
@@ -69,7 +62,6 @@ def list_questions(
         )
     ).all()
 
-    # Multiple published versions can exist. Use the newest one for each item.
     latest = {}
     for item, exam, param, run in rows:
         existing = latest.get(item.id)
@@ -122,6 +114,20 @@ def list_questions(
             "paper_url": location[1] if location else None,
             "paper_page": paper_page,
         })
+    return catalog
+
+
+@router.get("")
+def list_questions(
+    year: int | None = None,
+    area: str | None = Query(default=None, pattern="^(LC|CH|CN|MT)$"),
+    subject: str | None = None,
+    difficulty: str | None = Query(default=None, pattern="^(facil|media|dificil)$"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=24, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    catalog = _build_catalog(db)
 
     subjects = sorted({question["subject"] for question in catalog if question["subject"]})
     years = sorted({question["year"] for question in catalog}, reverse=True)
@@ -142,4 +148,41 @@ def list_questions(
         "classified_count": sum(question["subject"] is not None for question in catalog),
         "analyzed_count": len(catalog),
         "difficulty_note": "Faixas relativas por edição e área, divididas em tercis do parâmetro b dos microdados do Inep; não são categorias oficiais.",
+    }
+
+
+@router.get("/{item_id}")
+def get_question(item_id: str, db: Session = Depends(get_db)):
+    question = next((q for q in _build_catalog(db) if q["id"] == item_id), None)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Questão não encontrada no catálogo TRI")
+    return question
+
+
+class AnswerSubmission(BaseModel):
+    answer: str = Field(pattern="^[ABCDE]$")
+
+
+@router.post("/{item_id}/check")
+def check_question_answer(item_id: str, submission: AnswerSubmission, db: Session = Depends(get_db)):
+    question = get_question(item_id, db)
+    mapping = db.scalar(
+        select(BookletItem)
+        .join(Booklet, BookletItem.booklet_id == Booklet.id)
+        .where(
+            BookletItem.item_id == item_id,
+            Booklet.day == question["day"],
+            Booklet.color == question["booklet_color"],
+            BookletItem.physical_position == question["position"],
+        )
+    )
+    if mapping is None:
+        raise HTTPException(status_code=404, detail="Gabarito não encontrado")
+    annulled = mapping.answer_key == "*"
+    return {
+        "item_id": item_id,
+        "selected_answer": submission.answer,
+        "correct_answer": None if annulled else mapping.answer_key.upper(),
+        "correct": None if annulled else submission.answer == mapping.answer_key.upper(),
+        "annulled": annulled,
     }

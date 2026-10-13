@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 
 type Question = {
@@ -80,7 +81,7 @@ export default function QuestionsPage() {
       <header className="space-y-3">
         <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">Acervo ENEM</p>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Banco de questões TRI</h1>
-        <p className="max-w-3xl text-slate-600">Explore as questões que possuem parâmetros publicados nos microdados do Inep. Abra o caderno oficial para ler o enunciado e as alternativas.</p>
+        <p className="max-w-3xl text-slate-600">Explore questões com parâmetros publicados nos microdados do Inep. Leia a página oficial aqui no site, marque uma alternativa e confira sua resposta.</p>
       </header>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" aria-label="Filtros de questões">
@@ -143,7 +144,7 @@ export default function QuestionsPage() {
               <div><dt className="text-slate-500">Habilidade</dt><dd className="font-medium text-slate-800">{question.skill_code || "Não informada"}</dd></div>
             </dl>
             <div className="mt-auto pt-5">
-              {question.paper_url ? <a href={`${question.paper_url}${question.paper_page ? `#page=${question.paper_page}` : ""}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300">Abrir questão no caderno ↗</a> : <p className="text-sm text-slate-500">Caderno oficial indisponível para esta questão.</p>}
+              {question.paper_url && question.paper_page ? <Link href={`/questions/${question.id}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300">Ler e responder</Link> : <p className="text-sm text-slate-500">Caderno oficial indisponível para esta questão.</p>}
             </div>
           </article>)}
         </div>
