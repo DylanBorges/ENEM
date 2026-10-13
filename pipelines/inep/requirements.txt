@@ -1,2 +1,6 @@
 PyYAML>=6.0.1,<7
 pypdf>=5,<7
+PyMuPDF>=1.26,<2
+rapidfuzz>=3.14,<4
+scipy>=1.14,<2
+Pillow>=10,<13

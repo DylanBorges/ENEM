@@ -71,6 +71,32 @@ Acesse:
 
 ---
 
+## 📚 Banco de questões no site
+
+O catálogo TRI mostra apenas itens com calibração publicada. O enunciado, as
+figuras e as cinco alternativas são servidos separadamente pela API, sem
+renderizar páginas de PDF. O arquivo versionado
+`services/api/app/db/question_content.json` e as imagens em
+`apps/web/public/question-images/` permitem usar o site sem os PDFs locais.
+
+A transcrição de 2017–2023 veio do acervo [enem.dev](https://github.com/ardotheedu/api-enem),
+com correspondência textual ao caderno local e gabarito da transcrição;
+2024–2025 usam os textos acessíveis DOSVOX,
+os cadernos e os gabaritos oficiais do
+[Inep](https://www.gov.br/inep/pt-br/areas-de-atuacao/avaliacao-e-exames-educacionais/enem/provas-e-gabaritos).
+Quando a correspondência entre cadernos ou uma alternativa é incerta, o item
+permanece no catálogo, mas a leitura e a resposta no site ficam indisponíveis.
+As disciplinas específicas são sugestões automáticas baseadas no texto e
+podem ficar vazias em questões ambíguas; os microdados só identificam a área.
+
+Para regenerar os arquivos, instale `pipelines/inep/requirements.txt`, tenha
+o banco SQLite de referência, os cadernos e gabaritos oficiais em
+`data/booklets/` e os JSONs do enem.dev em `data/processed/enem-dev/quiz-items/`.
+Depois execute `python -m pipelines.inep.build_question_content` na raiz.
+Os diretórios de entrada não são enviados no deploy.
+
+---
+
 ## 🧪 Testes Automatizados
 
 O repositório possui uma suíte inicial de testes unitários e de integração. Ela ainda não cobre todos os critérios de aceite do projeto:

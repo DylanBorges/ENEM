@@ -27,6 +27,21 @@ DIFFICULTY_NAMES = ("facil", "media", "dificil")
 EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 PAGE_MAP_FILE = Path(__file__).resolve().parents[2] / "db/question_pages.json"
 PAGE_MAP = json.loads(PAGE_MAP_FILE.read_text(encoding="utf-8")) if PAGE_MAP_FILE.is_file() else {}
+CONTENT_FILE = Path(__file__).resolve().parents[2] / "db/question_content.json"
+CONTENT_MAP = json.loads(CONTENT_FILE.read_text(encoding="utf-8")) if CONTENT_FILE.is_file() else {}
+
+
+def _content_for_question(question: dict) -> dict | None:
+    position = question["position"]
+    expected_area = "LC" if position <= 45 else "CH" if position <= 90 else "CN" if position <= 135 else "MT"
+    if question["area"] != expected_area:
+        return None
+    language = question["booklet_language"] if question["position"] <= 5 else None
+    key = f"{question['year']}-{question['position']}-{language or 'NONE'}"
+    content = CONTENT_MAP.get(key)
+    if content and content.get("official_item_code") == question["official_item_code"] and question["official_item_code"]:
+        return content
+    return None
 
 
 def _subject(area: str, booklet: Booklet, position: int) -> str | None:
@@ -96,7 +111,7 @@ def _build_catalog(db: Session) -> list[dict]:
         location = _paper_location(exam, booklet)
         page_key = f"ES-{mapping.physical_position}" if booklet.language == "ESPANHOL" and mapping.physical_position <= 5 else str(mapping.physical_position)
         paper_page = PAGE_MAP.get(f"{exam.year}-{booklet.day}", {}).get(page_key)
-        catalog.append({
+        entry = {
             "id": item.id,
             "year": exam.year,
             "day": booklet.day,
@@ -113,7 +128,15 @@ def _build_catalog(db: Session) -> list[dict]:
             "calibration_id": run.calibration_id,
             "paper_url": location[1] if location else None,
             "paper_page": paper_page,
-        })
+        }
+        content = _content_for_question(entry)
+        entry["content_available"] = content is not None
+        if content and content.get("subject"):
+            entry["subject"] = content["subject"]
+            entry["subject_classification"] = "automatic" if item.area in ("LC", "CH", "CN") and mapping.physical_position > 5 else "exam"
+        else:
+            entry["subject_classification"] = "exam" if entry["subject"] else None
+        catalog.append(entry)
     return catalog
 
 
@@ -129,7 +152,9 @@ def list_questions(
 ):
     catalog = _build_catalog(db)
 
-    subjects = sorted({question["subject"] for question in catalog if question["subject"]})
+    subjects = sorted({question["subject"] for question in catalog if question["subject"]
+                       and (year is None or question["year"] == year)
+                       and (area is None or question["area"] == area)})
     years = sorted({question["year"] for question in catalog}, reverse=True)
     filtered = [question for question in catalog if
                 (year is None or question["year"] == year)
@@ -147,6 +172,8 @@ def list_questions(
         "subjects": subjects,
         "classified_count": sum(question["subject"] is not None for question in catalog),
         "analyzed_count": len(catalog),
+        "content_count": sum(question["content_available"] for question in catalog),
+        "subject_note": "Disciplinas específicas são sugestões automáticas pelo texto; os microdados do Inep identificam apenas a área. Itens ambíguos ficam sem disciplina.",
         "difficulty_note": "Faixas relativas por edição e área, divididas em tercis do parâmetro b dos microdados do Inep; não são categorias oficiais.",
     }
 
@@ -156,6 +183,11 @@ def get_question(item_id: str, db: Session = Depends(get_db)):
     question = next((q for q in _build_catalog(db) if q["id"] == item_id), None)
     if question is None:
         raise HTTPException(status_code=404, detail="Questão não encontrada no catálogo TRI")
+    content = _content_for_question(question)
+    if content:
+        question = {**question, "blocks": content["blocks"], "alternatives": content["alternatives"],
+                    "content_source": content["source"], "source_position": content["source_number"],
+                    "source_booklet": content["source_booklet"]}
     return question
 
 
@@ -178,11 +210,13 @@ def check_question_answer(item_id: str, submission: AnswerSubmission, db: Sessio
     )
     if mapping is None:
         raise HTTPException(status_code=404, detail="Gabarito não encontrado")
-    annulled = mapping.answer_key == "*"
+    content = _content_for_question(question)
+    answer_key = content["answer_key"] if content else mapping.answer_key.upper()
+    annulled = answer_key == "*"
     return {
         "item_id": item_id,
         "selected_answer": submission.answer,
-        "correct_answer": None if annulled else mapping.answer_key.upper(),
-        "correct": None if annulled else submission.answer == mapping.answer_key.upper(),
+        "correct_answer": None if annulled else answer_key,
+        "correct": None if annulled else submission.answer == answer_key,
         "annulled": annulled,
     }

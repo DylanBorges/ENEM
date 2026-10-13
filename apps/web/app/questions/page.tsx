@@ -20,6 +20,7 @@ type Question = {
   parameter_b: number;
   paper_url: string | null;
   paper_page: number | null;
+  content_available: boolean;
 };
 
 type Catalog = {
@@ -31,6 +32,8 @@ type Catalog = {
   subjects: string[];
   classified_count: number;
   analyzed_count: number;
+  content_count: number;
+  subject_note: string;
   difficulty_note: string;
 };
 
@@ -81,7 +84,7 @@ export default function QuestionsPage() {
       <header className="space-y-3">
         <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">Acervo ENEM</p>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Banco de questões TRI</h1>
-        <p className="max-w-3xl text-slate-600">Explore questões com parâmetros publicados nos microdados do Inep. Leia a página oficial aqui no site, marque uma alternativa e confira sua resposta.</p>
+        <p className="max-w-3xl text-slate-600">Explore questões analisadas pelos microdados do Inep. Leia o enunciado e as alternativas aqui no site, marque uma resposta e confira o gabarito.</p>
       </header>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" aria-label="Filtros de questões">
@@ -94,13 +97,13 @@ export default function QuestionsPage() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-1 text-sm font-medium text-slate-700">Ano
-            <select value={year} onChange={(event) => { setYear(event.target.value); setPage(1); }} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <select value={year} onChange={(event) => { setYear(event.target.value); setSubject(""); setPage(1); }} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
               <option value="">Todos os anos</option>
               {catalog?.years.map((value) => <option value={value} key={value}>{value}</option>)}
             </select>
           </label>
           <label className="space-y-1 text-sm font-medium text-slate-700">Área
-            <select value={area} onChange={(event) => { setArea(event.target.value); setPage(1); }} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <select value={area} onChange={(event) => { setArea(event.target.value); setSubject(""); setPage(1); }} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
               <option value="">Todas as áreas</option>
               {areas.map((value) => <option value={value.value} key={value.value}>{value.label}</option>)}
             </select>
@@ -120,7 +123,7 @@ export default function QuestionsPage() {
             </select>
           </label>
         </div>
-        {catalog && <p className="mt-4 text-xs leading-relaxed text-slate-600">{catalog.difficulty_note} A classificação por disciplina está disponível para {catalog.classified_count.toLocaleString("pt-BR")} de {catalog.analyzed_count.toLocaleString("pt-BR")} itens; as demais questões permanecem sem disciplina até revisão do conteúdo.</p>}
+        {catalog && <p className="mt-4 text-xs leading-relaxed text-slate-600">{catalog.difficulty_note} {catalog.subject_note} {catalog.content_count.toLocaleString("pt-BR")} de {catalog.analyzed_count.toLocaleString("pt-BR")} questões já têm enunciado e alternativas para leitura no site.</p>}
       </section>
 
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
@@ -144,7 +147,7 @@ export default function QuestionsPage() {
               <div><dt className="text-slate-500">Habilidade</dt><dd className="font-medium text-slate-800">{question.skill_code || "Não informada"}</dd></div>
             </dl>
             <div className="mt-auto pt-5">
-              {question.paper_url && question.paper_page ? <Link href={`/questions/${question.id}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300">Ler e responder</Link> : <p className="text-sm text-slate-500">Caderno oficial indisponível para esta questão.</p>}
+              {question.content_available ? <Link href={`/questions/${question.id}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300">Ler e responder</Link> : <p className="text-sm text-slate-500">Enunciado em revisão para leitura no site.</p>}
             </div>
           </article>)}
         </div>

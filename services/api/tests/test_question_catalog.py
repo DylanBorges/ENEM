@@ -1,5 +1,15 @@
 from app.models.calibration import CalibrationRun, ItemParameterModel
 from app.models.exam import Booklet, BookletItem, Item
+from app.api.v1.questions import CONTENT_MAP, _content_for_question
+
+
+def test_native_content_is_bound_to_the_official_item_code_and_area():
+    content = CONTENT_MAP["2025-1-INGLES"]
+    question = {"year": 2025, "position": 1, "booklet_language": "INGLES",
+                "area": "LC", "official_item_code": content["official_item_code"]}
+    assert _content_for_question(question)["alternatives"][0]["letter"] == "A"
+    assert _content_for_question({**question, "official_item_code": "OTHER"}) is None
+    assert _content_for_question({**question, "area": "MT"}) is None
 
 
 def test_catalog_filters_all_published_microdata_items_by_tri_difficulty(client, seed_data, db_session):
@@ -81,3 +91,22 @@ def test_question_detail_and_answer_use_the_matching_official_key(client, seed_d
     db_session.add(BookletItem(booklet_id=seed_data["booklet"].id, item_id=private.id, physical_position=11, answer_key="E"))
     db_session.commit()
     assert client.post(f"/v1/questions/{private.id}/check", json={"answer": "E"}).status_code == 404
+
+
+def test_native_question_detail_and_answer_follow_the_displayed_booklet(client, seed_data, db_session):
+    content = CONTENT_MAP["2025-136-NONE"]
+    item = Item(exam_id=seed_data["exam"].id, area="MT", official_item_code=content["official_item_code"])
+    db_session.add(item)
+    db_session.flush()
+    wrong_local_key = next(letter for letter in "ABCDE" if letter != content["answer_key"])
+    db_session.add(BookletItem(booklet_id=seed_data["booklet"].id, item_id=item.id,
+                               physical_position=136, answer_key=wrong_local_key))
+    db_session.add(ItemParameterModel(item_id=item.id, calibration_run_id=seed_data["cal_mt"].id,
+                                      a=1.2, b=0.2, c=0.2, status="ACTIVE"))
+    db_session.commit()
+
+    detail = client.get(f"/v1/questions/{item.id}").json()
+    assert detail["content_available"] is True
+    assert detail["blocks"]
+    assert [choice["letter"] for choice in detail["alternatives"]] == list("ABCDE")
+    assert client.post(f"/v1/questions/{item.id}/check", json={"answer": content["answer_key"]}).json()["correct"] is True
