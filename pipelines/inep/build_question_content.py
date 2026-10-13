@@ -188,7 +188,8 @@ def dosvox_questions(year: int, day: int) -> list[dict]:
         alternatives = []
         for i, choice in enumerate(choices):
             end = choices[i + 1].start() if i + 1 < len(choices) else len(body)
-            alternatives.append({"letter": choice.group(1).upper(), "text": body[choice.end():end].strip(), "image": None})
+            alternative_text = re.sub(r"\s*\(Fim da prova\)\s*$", "", body[choice.end():end], flags=re.IGNORECASE).strip()
+            alternatives.append({"letter": choice.group(1).upper(), "text": alternative_text, "image": None})
         result.append({"number": position, "occurrence": counts[position], "statement": statement, "alternatives": alternatives})
     return result
 
