@@ -1,6 +1,7 @@
 from app.models.calibration import CalibrationRun, ItemParameterModel
 from app.models.exam import Booklet, BookletItem, Item
 from app.api.v1.questions import CONTENT_MAP, _content_for_question
+from app.api.v1 import questions as questions_api
 
 
 def test_native_content_is_bound_to_the_official_item_code_and_area():
@@ -110,3 +111,27 @@ def test_native_question_detail_and_answer_follow_the_displayed_booklet(client, 
     assert detail["blocks"]
     assert [choice["letter"] for choice in detail["alternatives"]] == list("ABCDE")
     assert client.post(f"/v1/questions/{item.id}/check", json={"answer": content["answer_key"]}).json()["correct"] is True
+
+
+def test_question_arrows_follow_catalog_filters_and_skip_unreadable_items(client, monkeypatch):
+    catalog = [
+        {"id": item_id, "year": 2025, "day": 1, "position": position,
+         "area": "LC", "subject": subject, "difficulty": "facil",
+         "booklet_language": "INGLES", "official_item_code": item_id,
+         "content_available": readable}
+        for item_id, position, subject, readable in (
+            ("c", 3, "Inglês", True), ("b", 2, "Inglês", False),
+            ("d", 4, "Português", True), ("a", 1, "Inglês", True),
+        )
+    ]
+    monkeypatch.setattr(questions_api, "_build_catalog", lambda db: catalog)
+
+    first = client.get("/v1/questions/a/neighbors?year=2025&area=LC&subject=Ingl%C3%AAs&difficulty=facil")
+    assert first.status_code == 200
+    assert first.json() == {"previous": None, "next": {"id": "c", "position": 3}}
+    last = client.get("/v1/questions/c/neighbors?subject=Ingl%C3%AAs")
+    assert last.json() == {"previous": {"id": "a", "position": 1}, "next": None}
+    assert client.get("/v1/questions/c/neighbors").json()["next"] == {"id": "d", "position": 4}
+    assert client.get("/v1/questions/b/neighbors").json() == {"previous": None, "next": None}
+    assert client.get("/v1/questions/unpublished/neighbors").status_code == 404
+    assert client.get("/v1/questions/a/neighbors?difficulty=unknown").status_code == 422

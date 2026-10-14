@@ -140,6 +140,18 @@ def _build_catalog(db: Session) -> list[dict]:
     return catalog
 
 
+def _filtered_catalog(catalog: list[dict], year: int | None, area: str | None,
+                      subject: str | None, difficulty: str | None) -> list[dict]:
+    filtered = [question for question in catalog if
+                (year is None or question["year"] == year)
+                and (area is None or question["area"] == area)
+                and (subject is None or question["subject"] == subject)
+                and (difficulty is None or question["difficulty"] == difficulty)]
+    filtered.sort(key=lambda q: (-q["year"], q["day"], q["position"],
+                                 q["booklet_language"] == "ESPANHOL", q["official_item_code"] or ""))
+    return filtered
+
+
 @router.get("")
 def list_questions(
     year: int | None = None,
@@ -156,12 +168,7 @@ def list_questions(
                        and (year is None or question["year"] == year)
                        and (area is None or question["area"] == area)})
     years = sorted({question["year"] for question in catalog}, reverse=True)
-    filtered = [question for question in catalog if
-                (year is None or question["year"] == year)
-                and (area is None or question["area"] == area)
-                and (subject is None or question["subject"] == subject)
-                and (difficulty is None or question["difficulty"] == difficulty)]
-    filtered.sort(key=lambda q: (-q["year"], q["day"], q["position"], q["booklet_language"] == "ESPANHOL", q["official_item_code"] or ""))
+    filtered = _filtered_catalog(catalog, year, area, subject, difficulty)
     start = (page - 1) * page_size
     return {
         "items": filtered[start:start + page_size],
@@ -175,6 +182,29 @@ def list_questions(
         "content_count": sum(question["content_available"] for question in catalog),
         "subject_note": "Disciplinas específicas são sugestões automáticas pelo texto; os microdados do Inep identificam apenas a área. Itens ambíguos ficam sem disciplina.",
         "difficulty_note": "Faixas relativas por edição e área, divididas em tercis do parâmetro b dos microdados do Inep; não são categorias oficiais.",
+    }
+
+
+@router.get("/{item_id}/neighbors")
+def get_question_neighbors(
+    item_id: str,
+    year: int | None = None,
+    area: str | None = Query(default=None, pattern="^(LC|CH|CN|MT)$"),
+    subject: str | None = None,
+    difficulty: str | None = Query(default=None, pattern="^(facil|media|dificil)$"),
+    db: Session = Depends(get_db),
+):
+    catalog = _build_catalog(db)
+    if not any(question["id"] == item_id for question in catalog):
+        raise HTTPException(status_code=404, detail="Questão não encontrada no catálogo TRI")
+    readable = [question for question in _filtered_catalog(catalog, year, area, subject, difficulty)
+                if question["content_available"]]
+    index = next((index for index, question in enumerate(readable) if question["id"] == item_id), None)
+    if index is None:
+        return {"previous": None, "next": None}
+    return {
+        "previous": {"id": readable[index - 1]["id"], "position": readable[index - 1]["position"]} if index > 0 else None,
+        "next": {"id": readable[index + 1]["id"], "position": readable[index + 1]["position"]} if index + 1 < len(readable) else None,
     }
 
 

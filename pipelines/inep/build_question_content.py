@@ -41,6 +41,28 @@ def normalize(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", value).strip()
 
 
+def decode_2018_pdf_text(value: str) -> str:
+    """Undo the shifted glyph encoding in part of the 2018 printed PDF.
+
+    This is only used to match a caderno position to a separately transcribed
+    item. The decoded PDF text is never published as a question statement.
+    """
+    lines = []
+    for line in value.splitlines():
+        if "\x03" in line:
+            decoded = []
+            for character in line:
+                if "A" <= character <= "Z":
+                    decoded.append(chr((ord(character) - ord("A") - 3) % 26 + ord("A")))
+                elif "a" <= character <= "z":
+                    decoded.append(chr((ord(character) - ord("a") - 3) % 26 + ord("a")))
+                else:
+                    decoded.append({"\x03": " ", "\x0f": ",", "\x11": ".", "\x10": "-"}.get(character, character))
+            line = "".join(decoded)
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def official_mappings() -> dict[tuple[int, int, str | None], str]:
     connection = sqlite3.connect(ROOT / "enem_intelligence.db")
     rows = connection.execute("""
@@ -157,7 +179,8 @@ def structured_questions(answer_keys: dict) -> dict:
                    "alternatives": [{"text": alternative.get("text") or ""} for alternative in data.get("alternatives") or []]}
                   for number, data in source_data.items()]
         for target, source, score in match_covers(blue, orange):
-            if score < 80 and (score < 60 or match_margin(target, source, orange, score) < 15):
+            minimum_score, minimum_margin = (55, 12) if year == 2018 else (60, 15)
+            if score < 80 and (score < minimum_score or match_margin(target, source, orange, score) < minimum_margin):
                 continue
             data = source_data[source["number"]]
             answer = (data.get("correctAlternative") or "").upper()
@@ -172,8 +195,13 @@ def structured_questions(answer_keys: dict) -> dict:
 
 
 def dosvox_questions(year: int, day: int) -> list[dict]:
-    path = next(BOOKLETS.glob(f"{year}_Dia_{day}*DOSVOX.txt"))
-    text = path.read_bytes().decode("cp1252")
+    if year == 2023:
+        areas = ("LC", "CH") if day == 1 else ("CN", "MT")
+        paths = [next(BOOKLETS.glob(f"{year}_Dia_{day}_P1_{area}_*DOSVOX.txt")) for area in areas]
+        text = "\n".join(path.read_bytes().decode("cp1252") for path in paths)
+    else:
+        path = next(BOOKLETS.glob(f"{year}_Dia_{day}*DOSVOX.txt"))
+        text = path.read_bytes().decode("cp1252")
     headings = list(DOSVOX_HEADING.finditer(text))
     counts = defaultdict(int)
     result = []
@@ -221,11 +249,14 @@ def pdf_questions(year: int, day: int, color: str = "blue") -> tuple[fitz.Docume
                 questions.append(current)
             elif current is not None:
                 current["text"] += " " + block[4]
+    if year == 2018:
+        for question in questions:
+            question["text"] = decode_2018_pdf_text(question["text"])
     return document, questions
 
 
 def orange_answer_keys(year: int, day: int) -> dict[tuple[int, int], str]:
-    path = BOOKLETS / f"{year}_GB_D{day}_CD{9 if day == 1 else 11}.pdf"
+    path = next(BOOKLETS.glob(f"{year}_GB_D{day}_CD{9 if day == 1 else 11}*.pdf"))
     text = "\n".join(page.get_text() for page in fitz.open(path))
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     result = {}
@@ -307,7 +338,7 @@ def question_figure(document: fitz.Document, orange_pdf: dict, year: int, day: i
 def recent_questions() -> tuple[dict, Counter]:
     result = {}
     audit = Counter()
-    for year in (2024, 2025):
+    for year in (2023, 2024, 2025):
         for day in (1, 2):
             orange = dosvox_questions(year, day)
             blue_doc, blue = pdf_questions(year, day)
@@ -346,7 +377,8 @@ def main() -> None:
     codes = reference_item_codes()
     data = structured_questions(answer_keys)
     recent, audit = recent_questions()
-    data.update(recent)
+    for item_key, record in recent.items():
+        data.setdefault(item_key, record)
     for item_key, record in data.items():
         _, position_text, language = item_key.split("-", 2)
         position = int(position_text)
