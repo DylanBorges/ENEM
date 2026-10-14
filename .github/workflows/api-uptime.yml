@@ -1,0 +1,36 @@
+name: API readiness
+
+on:
+  schedule:
+    # Avoid the start of the hour, when GitHub schedules are often delayed.
+    - cron: "5,15,25,35,45,55 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-readiness
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check API and database readiness
+        env:
+          READY_URL: https://enem-6zen.onrender.com/health/ready
+        shell: bash
+        run: |
+          for attempt in {1..6}; do
+            if curl --fail --silent --show-error --location --max-time 20 \
+                --output "$RUNNER_TEMP/ready.json" "$READY_URL" && \
+                python3 -c 'import json, os; p = os.environ["RUNNER_TEMP"] + "/ready.json"; d = json.load(open(p)); assert d.get("status") == "ready" and d.get("database") == "connected"'; then
+              echo "API and database are ready."
+              exit 0
+            fi
+            if [ "$attempt" -lt 6 ]; then sleep 10; fi
+          done
+          echo "::error::API did not become ready after six attempts."
+          exit 1

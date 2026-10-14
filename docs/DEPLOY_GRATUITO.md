@@ -29,3 +29,19 @@ necessário cadastrar-se uma última vez após a troca para PostgreSQL.
 
 O arquivo `.env` local pode continuar usando SQLite para desenvolvimento.
 Não compartilhe a URL do banco nos logs de suporte ou em capturas de tela.
+
+## Disponibilidade da API gratuita
+
+O workflow [API readiness](../.github/workflows/api-uptime.yml) consulta
+`/health/ready` a cada 10 minutos. Como o repositório é público, os runners
+padrão do GitHub Actions não geram cobrança. A verificação mantém a única
+instância Free deste workspace ativa durante os intervalos em que o GitHub
+executa o agendamento e falha visivelmente se a API ou o banco não responderem.
+
+Isso reduz as suspensões por inatividade, mas não garante disponibilidade
+contínua: o GitHub pode atrasar ou omitir execuções agendadas, e o Render pode
+reiniciar instâncias gratuitas. O Render compartilha 750 horas gratuitas por
+workspace a cada mês; adicionar outro serviço Free ativo pode esgotar essa
+cota. O GitHub desativa agendamentos em repositórios públicos sem atividade
+por 60 dias. Para disponibilidade contínua garantida, é necessário um plano
+com instância sempre ativa ou outra infraestrutura com essa característica.
